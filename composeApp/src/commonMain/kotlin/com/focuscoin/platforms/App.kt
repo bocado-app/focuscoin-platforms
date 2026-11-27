@@ -42,9 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 private val Purple = Color(0xFF6650A4)
 private val Gold = Color(0xFFF2B84B)
@@ -54,8 +51,8 @@ private val Muted = Color(0xFF756F7D)
 private enum class Page(val label: String) { HOME("홈"), LOCK("잠금 앱"), REPORT("리포트"), SETTINGS("설정") }
 private enum class TimerStatus { IDLE, RUNNING, PAUSED }
 
-private fun nowMillis() = Clock.System.now().toEpochMilliseconds()
-private fun todayKey() = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+private fun nowMillis() = PlatformStore.nowMillis()
+private fun todayKey() = PlatformStore.todayKey()
 private fun fmt(seconds: Int): String {
     val safe = seconds.coerceAtLeast(0)
     val minutes = safe / 60
@@ -261,7 +258,7 @@ private fun FocusCoinRoot(darkMode: Boolean, setDarkMode: (Boolean) -> Unit) {
     if (showUnlockConfirm) AlertDialog(
         onDismissRequest = { showUnlockConfirm = false },
         title = { Text("앱 이용권을 구매할까요?") },
-        text = { Text("선택한 잠금 앱을 ${unlockMinutes}분 동안 이용합니다. $unlockCost코인이 차감돼요.") },
+        text = { Text("선택한 잠금 앱을 ${unlockMinutes}분 동안 이용합니다. ${unlockCost}코인이 차감돼요.") },
         confirmButton = { TextButton(onClick = { showUnlockConfirm = false; buyUnlock() }) { Text("코인으로 해제") } },
         dismissButton = { TextButton(onClick = { showUnlockConfirm = false }) { Text("취소") } }
     )
@@ -296,7 +293,7 @@ private fun HomePage(coins: Int, minutes: Int, attendance: Int, checkedInToday: 
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard("공부 시간", "${minutes / 60}시간 ${minutes % 60}분", Modifier.weight(1f))
-            StatCard("이번 주 목표", "$weeklyGoal분", Modifier.weight(1f))
+            StatCard("이번 주 목표", "${weeklyGoal}분", Modifier.weight(1f))
         }
         Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(20.dp)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -307,7 +304,7 @@ private fun HomePage(coins: Int, minutes: Int, attendance: Int, checkedInToday: 
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("누적 $attendance회${if (next == null) " · 최고 티어" else " · 다음 티어까지 ${next - attendance}회"}", color = Muted)
+                        Text("누적 ${attendance}회${if (next == null) " · 최고 티어" else " · 다음 티어까지 ${next - attendance}회"}", color = Muted)
                     }
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = onAttendance, enabled = !checkedInToday) { Text(if (checkedInToday) "오늘 출석 완료" else "출석 구매") }
@@ -358,9 +355,9 @@ private fun LockInfoPage(
         }
         val remaining = ((unlockUntil - nowMillis()) / 60_000L).toInt().coerceAtLeast(0)
         if (remaining > 0) Text("선택한 앱 사용권 ${remaining}분 남음", color = Purple, fontWeight = FontWeight.Bold)
-        else Text("보유 코인 $coins · ${unlockMinutes}분 이용권 $unlockCost코인", color = Muted)
+        else Text("보유 코인 $coins · ${unlockMinutes}분 이용권 ${unlockCost}코인", color = Muted)
         Button(onClick = onBuyUnlock, enabled = hasTargets && coins >= unlockCost, modifier = Modifier.fillMaxWidth()) {
-            Text(if (coins < unlockCost) "${unlockCost - coins}코인 부족" else "선택한 앱 ${unlockMinutes}분 해제 · $unlockCost코인")
+            Text(if (coins < unlockCost) "${unlockCost - coins}코인 부족" else "선택한 앱 ${unlockMinutes}분 해제 · ${unlockCost}코인")
         }
         if (coins < unlockCost) TextButton(onClick = onStudy) { Text("공부 시작해 코인 모으기") }
         if (!hasTargets) Text("먼저 잠글 앱을 선택하세요.", color = Muted)
@@ -378,7 +375,7 @@ private fun ReportPage(totalMinutes: Int, attendance: Int) {
         Text("리포트", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard("총 공부 시간", "${totalMinutes / 60}시간 ${totalMinutes % 60}분", Modifier.weight(1f))
-            StatCard("출석 구매", "$attendance회", Modifier.weight(1f))
+            StatCard("출석 구매", "${attendance}회", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard("획득 코인", "$earned", Modifier.weight(1f))
