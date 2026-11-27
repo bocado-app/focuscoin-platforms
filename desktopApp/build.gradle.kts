@@ -7,7 +7,7 @@ plugins {
 kotlin { jvmToolchain(17) }
 
 dependencies {
-    implementation(projects.composeApp)
+    implementation(project(":composeApp"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
 }
