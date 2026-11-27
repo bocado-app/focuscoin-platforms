@@ -1,0 +1,63 @@
+name: Windows and iOS simulator builds
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build Windows app image
+        run: .\gradlew.bat :desktopApp:createDistributable
+      - name: Zip Windows app
+        shell: pwsh
+        run: |
+          $appPath = Join-Path $env:GITHUB_WORKSPACE "desktopApp/build/compose/binaries/main/app/FocusCoin"
+          if (-not (Test-Path (Join-Path $appPath "FocusCoin.exe"))) { throw "FocusCoin.exe was not produced" }
+          Compress-Archive -Path (Join-Path $appPath "*") -DestinationPath "$env:GITHUB_WORKSPACE/FocusCoin-Windows.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FocusCoin-Windows
+          path: FocusCoin-Windows.zip
+          if-no-files-found: error
+
+  ios-simulator:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build shared iOS framework
+        run: ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64
+      - name: Generate Xcode project
+        working-directory: iosApp
+        run: xcodegen generate
+      - name: Build iOS simulator preview
+        run: >-
+          xcodebuild -project iosApp/FocusCoin.xcodeproj -scheme FocusCoin
+          -sdk iphonesimulator -configuration Debug
+          -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath iosApp/build/DerivedData CODE_SIGNING_ALLOWED=NO build
+      - name: Package simulator preview
+        run: ditto -c -k --sequesterRsrc --keepParent iosApp/build/DerivedData/Build/Products/Debug-iphonesimulator/FocusCoin.app FocusCoin-iOS-Simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FocusCoin-iOS-Simulator-preview-only
+          path: FocusCoin-iOS-Simulator.zip
+          if-no-files-found: error

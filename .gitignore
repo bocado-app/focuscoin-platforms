@@ -1,0 +1,6 @@
+.gradle/
+**/build/
+iosApp/FocusCoin.xcodeproj/
+iosApp/build/
+*.xcuserstate
+.DS_Store

@@ -1,0 +1,43 @@
+name: FocusCoin
+options:
+  bundleIdPrefix: app.focuscoin
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    GENERATE_INFOPLIST_FILE: YES
+targets:
+  FocusCoin:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.focuscoin.mobile
+        PRODUCT_NAME: FocusCoin
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_ENTITLEMENTS: iosApp/FocusCoin.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: FocusCoin
+    dependencies:
+      - framework: ../composeApp/build/bin/iosSimulatorArm64/debugFramework/ComposeApp.framework
+        embed: false
+      - target: FocusCoinMonitor
+        embed: true
+  FocusCoinMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: DeviceActivityMonitor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.focuscoin.mobile.DeviceActivityMonitor
+        CODE_SIGN_ENTITLEMENTS: DeviceActivityMonitor/FocusCoinMonitor.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+    info:
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.deviceactivity.monitor-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FocusCoinDeviceActivityMonitor
